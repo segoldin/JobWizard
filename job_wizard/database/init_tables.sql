@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS user (
 	last_name  varchar(32),  
 	phone varchar(16),
 	max_education integer,
-	created DATETIME         -- always a good idea to save a time stamp   
+	created varchar(32)         -- always a good idea to save a time stamp
+	                            -- but Go seems to have trouble with sqlite datetime    
 );
 
 -- Job descriptions
@@ -39,13 +40,13 @@ CREATE TABLE IF NOT EXISTS job (
 	salary integer,
 	hired_person varchar(32) default '',    -- email of person hired
 	is_open integer default 1,   -- 1 if still open, 0 if filled
-	created DATETIME             -- always a good idea to save a time stamp   
+	created varchar(32)             -- always a good idea to save a time stamp   
 );
 
 CREATE TABLE IF NOT EXISTS job_applications (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	job_id char(6),          -- job ID with leading zeros
 	user_email varchar(32),  -- user who has applied
-	apply_time DATETIME
+	apply_time varchar(32)
 );
 
