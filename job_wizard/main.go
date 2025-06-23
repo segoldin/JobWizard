@@ -8,32 +8,38 @@ import (
     //"log"
     "os"
     "path/filepath"    
-    "strings"
-    "strconv"
     "github.com/segoldin/JobWizard/job_wizard/dbaccess"
     //"github.com/segoldin/JobWizard/job_wizard/api"
-    //"github.com/segoldin/JobWizard/job_wizard/api/middlewares"        
+    "github.com/segoldin/JobWizard/job_wizard/api/middlewares"        
     "github.com/joho/godotenv"
     "github.com/labstack/echo/v4"
     "github.com/labstack/echo/v4/middleware"    
 )
 
+
 var (
+    server         bool
     task           string
- //   user_email     string
- //   first_name     string
- //   last_name      string
- //   phone          string
- //   education      int
+    user           user_info
+    job            job_info
 )
 
 func main() {
+    flag.BoolVar(&server, "server", false, "Specify as true to expose REST API")    
     flag.StringVar(&task, "task", "", "Task to perform")
+    // see validate.go for a list of defined tasks
+    // arguments for register
+    flag.StringVar(&user.email,"email","","Email of user registering")
+    flag.StringVar(&user.first,"first","","First name of user registering")
+    flag.StringVar(&user.last,"last","","Last name of user registering")
+    flag.StringVar(&user.phone,"phone","","10 digit phone number of user registering")   
+    flag.StringVar(&user.education,"education","","Education of user registering - 0 to 4 (doctoral)")   
+
     flag.Parse()
-    if task != "" {
-        commandLineFunction()
-    } else {
+    if server {
         setupAPI()
+    } else {
+        commandLineFunction()
     }
 }
 
@@ -59,7 +65,23 @@ func setupAPI() {
 }
 
 func commandLineFunction() {
-    fmt.Println("Called commandLineFunction()")
+    dbOk := dbaccess.CheckConnection()
+
+    if !dbOk {
+        fmt.Println("Connection to DB failed")
+        os.Exit(1)
+    }
+    valid, msg := validateTaskArgs(task,user,job)
+    if !valid {
+        jsonErrorOutput(msg)
+        os.Exit(1)
+    }
+}
+
+// Output an error message to the terminal
+// in JSON format
+func jsonErrorOutput(msg string ) {
+    fmt.Printf("{ \"error\" : \"%s\" }\n", msg)
 }
 
 // Get the current process ID and write to a file in
