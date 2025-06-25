@@ -7,7 +7,7 @@ import (
     "flag"
     //"log"
     "os"
-    "path/filepath"    
+    "path/filepath" 
     "github.com/segoldin/JobWizard/job_wizard/dbaccess"
     //"github.com/segoldin/JobWizard/job_wizard/api"
     "github.com/segoldin/JobWizard/job_wizard/api/middlewares"        
@@ -33,7 +33,14 @@ func main() {
     flag.StringVar(&user.first,"first","","First name of user registering")
     flag.StringVar(&user.last,"last","","Last name of user registering")
     flag.StringVar(&user.phone,"phone","","10 digit phone number of user registering")   
-    flag.StringVar(&user.education,"education","","Education of user registering - 0 to 4 (doctoral)")   
+    flag.IntVar(&user.education,"education",0,"Education of user registering - 0 to 4 (doctoral)") 
+    // arguments for create (job) and modify job
+    flag.StringVar(&job.creator,"creator","","Email of user creating the job")
+    flag.StringVar(&job.title,"title","","Job title, in quotes - 64 chars max")
+    flag.StringVar(&job.description,"description","","Job description, in quotes - 1024 chars max")
+    flag.IntVar(&job.min_education,"min_education",0,"Minimum education level required - integer from 0 to 4")   
+    flag.IntVar(&job.min_experience,"min_experience",0,"Minimum years of experience desired - integer")
+    flag.IntVar(&job.salary,"salary",0,"Monthly salary offered - integer, max 1 million")
 
     flag.Parse()
     if server {
@@ -76,8 +83,30 @@ func commandLineFunction() {
         jsonErrorOutput(msg)
         os.Exit(1)
     }
+    task_index := findTask(task)  // we have already validated the task above
+    jsonResponse := dispatch(task_index)
+    fmt.Println(jsonResponse)
 }
 
+// Figure out what db service/function to call to handle the task
+// We assume that dispatch() knows which structure holds the appropriate arguments
+// for the relevant task
+func dispatch(task_index int) (jsonResponse string) {
+    var err error
+    switch(task_index) {
+        case 0:
+            err = dbaccess.RegisterUser(user.email,user.first,user.last,user.phone,user.education)
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else {
+                jsonResponse = fmt.Sprintf("{ \"success\" : \"Registered user %s\"}\n",user.email)  
+            }
+            break
+        case 1:
+            fmt.Println("Not yet implemented")
+    }
+    return jsonResponse
+}
 // Output an error message to the terminal
 // in JSON format
 func jsonErrorOutput(msg string ) {
