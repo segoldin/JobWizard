@@ -7,7 +7,7 @@ type user_info struct {
     first           string 
     last            string 
     phone           string 
-    education       string    
+    education       int    
 }
 
 type job_info struct {
@@ -17,4 +17,5 @@ type job_info struct {
     min_education   int
     min_experience  int
     salary          int
+    is_filled       bool
 }
