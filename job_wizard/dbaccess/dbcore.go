@@ -86,7 +86,7 @@ func RegisterUser(user_email string, first_name string, last_name string, phone 
     }
     now := time.Now()
     nowstring := now.Format(timeFormatString) 
-    sqlcmd = fmt.Sprintf("INSERT INTO user (user_email, first_name, last_name, phone, max_education, created) values ('%s','%s','%s',%d,'%s')",
+    sqlcmd = fmt.Sprintf("INSERT INTO user (user_email, first_name, last_name, phone, max_education, created) values ('%s','%s','%s','%s',%d,'%s')",
                                 user_email, first_name, last_name, phone, education, nowstring)
     _,err = db.Exec(sqlcmd)
     if err != nil {
