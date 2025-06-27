@@ -8,6 +8,7 @@ import (
     "fmt"
     "os"
     "time"
+    "github.com/segoldin/JobWizard/job_wizard/data"      
     "github.com/joho/godotenv"     
      _ "github.com/mattn/go-sqlite3"
 )
@@ -130,3 +131,51 @@ func CreateJob(creator_email string, title string, desc string, education int, e
     return job_id, nil
 }
 
+// Function to search for jobs based on criteria, implementing the Search Jobs use case
+// Returns an array of job summary structures in posted date order (descending) or error
+func SearchJobs(posted string, min_education int, salary int, keyword string) (summaries []data.Job_summary, err error) {
+    var added_where = false   
+    fmt.Printf("Salary is %d\n",salary)
+     
+    sqlcmd := "SELECT id,title,is_open,created FROM job "
+    if posted != "" {
+        if !added_where {
+            sqlcmd += " where "
+            added_where = true
+        }
+        clause := fmt.Sprintf(" created >= '%s' ",posted)
+        sqlcmd += clause
+    }
+    if min_education != 0 {
+        if !added_where {
+            sqlcmd += " where "
+            added_where = true
+        } else {
+            sqlcmd += " and "
+        }
+        clause := fmt.Sprintf(" min_education <= %d ",min_education)
+        sqlcmd += clause
+    }
+    if salary != 0 {
+        if !added_where {
+            sqlcmd += " where "
+            added_where = true
+        } else {
+            sqlcmd += " and "
+        }
+        clause := fmt.Sprintf(" salary >= %d ",salary)
+        sqlcmd += clause
+    }
+    if keyword != "" {
+        if !added_where {
+            sqlcmd += " where "
+            added_where = true
+        } else {
+            sqlcmd += " and "
+        }
+        clause := fmt.Sprintf(" title like '%%%s%%' ",keyword)
+        sqlcmd += clause
+    }
+    fmt.Printf("sqlcmd is |%s|\n",sqlcmd)
+    return summaries, nil
+}
