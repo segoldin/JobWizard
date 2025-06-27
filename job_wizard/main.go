@@ -9,6 +9,7 @@ import (
     "os"
     "path/filepath" 
     "github.com/segoldin/JobWizard/job_wizard/dbaccess"
+    "github.com/segoldin/JobWizard/job_wizard/data"    
     //"github.com/segoldin/JobWizard/job_wizard/api"
     "github.com/segoldin/JobWizard/job_wizard/api/middlewares"        
     "github.com/joho/godotenv"
@@ -16,32 +17,40 @@ import (
     "github.com/labstack/echo/v4/middleware"    
 )
 
+// Job search criteria
 
 var (
     server         bool
     task           string
-    user           user_info
-    job            job_info
+    user           data.User_info
+    job            data.Job_info
+    filter         data.Search_criteria
 )
+
 
 func main() {
     flag.BoolVar(&server, "server", false, "Specify as true to expose REST API")    
     flag.StringVar(&task, "task", "", "Task to perform")
     // see validate.go for a list of defined tasks
     // arguments for register
-    flag.StringVar(&user.email,"email","","Email of user registering")
-    flag.StringVar(&user.first,"first","","First name of user registering")
-    flag.StringVar(&user.last,"last","","Last name of user registering")
-    flag.StringVar(&user.phone,"phone","","10 digit phone number of user registering")   
-    flag.IntVar(&user.education,"education",0,"Education of user registering - 0 to 4 (doctoral)") 
+    flag.StringVar(&user.Email,"email","","Email of user")
+    flag.StringVar(&user.First,"first","","First name of user registering")
+    flag.StringVar(&user.Last,"last","","Last name of user registering")
+    flag.StringVar(&user.Phone,"phone","","10 digit phone number of user registering")   
+    flag.IntVar(&user.Education,"education",0,"Education of user registering - 0 to 4 (doctoral)") 
     // arguments for create (job) and modify job
-    flag.StringVar(&job.creator,"creator","","Email of user creating the job")
-    flag.StringVar(&job.title,"title","","Job title, in quotes - 64 chars max")
-    flag.StringVar(&job.description,"description","","Job description, in quotes - 1024 chars max")
-    flag.IntVar(&job.min_education,"min_education",0,"Minimum education level required - integer from 0 to 4")   
-    flag.IntVar(&job.min_experience,"min_experience",0,"Minimum years of experience desired - integer")
-    flag.IntVar(&job.salary,"salary",0,"Monthly salary offered - integer, max 1 million")
-
+    flag.StringVar(&job.Creator,"creator","","Email of user creating the job")
+    flag.StringVar(&job.Title,"title","","Job title, in quotes - 64 chars max")
+    flag.StringVar(&job.Description,"description","","Job description, in quotes - 1024 chars max")
+    flag.IntVar(&job.Min_education,"min_education",0,"Minimum education level required - integer from 0 to 4")   
+    flag.IntVar(&job.Min_experience,"min_experience",0,"Minimum years of experience desired - integer")
+    flag.IntVar(&job.Salary,"salary",0,"Monthly salary offered - integer, max 1 million")
+    // arguments for search jobs
+    //   uses "email" ==> user.Email
+    flag.StringVar(&filter.Posted,"posted","","Posted date in format YYYY-MM-DD") 
+    //   uses "min_education" ==> job.Min_education
+    //   uses "salary"==> job.Salary
+    flag.StringVar(&filter.Keyword,"keyword","","Keyword for title search")  
     flag.Parse()
     if server {
         setupAPI()
@@ -78,7 +87,7 @@ func commandLineFunction() {
         fmt.Println("Connection to DB failed")
         os.Exit(1)
     }
-    valid, msg := validateTaskArgs(task,user,job)
+    valid, msg := validateTaskArgs(task,user,job,filter)
     if !valid {
         jsonErrorOutput(msg)
         os.Exit(1)
@@ -95,18 +104,32 @@ func dispatch(task_index int) (jsonResponse string) {
     var err error
     switch(task_index) {
         case 0:
-            err = dbaccess.RegisterUser(user.email,user.first,user.last,user.phone,user.education)
+            err = dbaccess.RegisterUser(user.Email,user.First,user.Last,user.Phone,user.Education)
             if err != nil {
                 jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
             } else {
-                jsonResponse = fmt.Sprintf("{ \"success\" : \"Registered user %s\"}\n",user.email)  
+                jsonResponse = fmt.Sprintf("{ \"success\" : \"Registered user %s\"}\n",user.Email)  
             }
             break
         case 1:
-            fmt.Println("Not yet implemented")
+            job_id, err := dbaccess.CreateJob(job.Creator,job.Title,job.Description,job.Min_education,
+                             job.Min_experience,job.Salary)
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else {
+                jsonResponse = fmt.Sprintf("{ \"job_id\" : \"%s\" }\n",job_id)  
+            }
+       case 2:
+            summaries, err := dbaccess.SearchJobs(filter.Posted, filter.Education, filter.Salary, filter.Keyword) 
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else {
+                jsonResponse = fmt.Sprintf("{ \"success\" : \"%d \" }\n", len(summaries))  
+            }            
     }
     return jsonResponse
 }
+
 // Output an error message to the terminal
 // in JSON format
 func jsonErrorOutput(msg string ) {
