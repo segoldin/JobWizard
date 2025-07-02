@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS job (
 
 CREATE TABLE IF NOT EXISTS job_applications (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	job_id char(6),          -- job ID with leading zeros
+	job_id int,              -- job ID with leading zeros
 	user_email varchar(32),  -- user who has applied
 	apply_time varchar(32)
 );
