@@ -7,11 +7,12 @@ import (
 	"regexp"
     "strings"
     "time"
-    //"strconv"
-    "github.com/segoldin/JobWizard/job_wizard/data"      
+    "strconv"
+    "github.com/segoldin/JobWizard/job_wizard/data"
+    "github.com/segoldin/JobWizard/job_wizard/dbaccess"      
 )
 
-var tasklist = [...]string{"register","create","search"} 
+var tasklist = [...]string{"register","create","search","detail","offered","applied"} 
 
 const (
 	timeFormatString = "2006-01-02 15:04 +700"
@@ -30,7 +31,10 @@ func findTask(task string) (index int) {
 	return index
 }
 
-func validateTaskArgs(task string, user data.User_info, job data.Job_info, filter data.Search_criteria) (bOk bool, msg string) {
+// Pass all structs used for arguments 
+// Note that some fields are used by multiple tasks
+// We pass pointers so that any changes or copying gets preserved in the caller
+func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, filter *data.Search_criteria) (bOk bool, msg string) {
 	bOk = true
 	taskIndex := findTask(task)
 	if taskIndex < 0 {
@@ -46,17 +50,33 @@ func validateTaskArgs(task string, user data.User_info, job data.Job_info, filte
 		case 2:
 			// can only define a command line arg once, so we copy from other structs
 			filter.User_email = user.Email
+			filter.Experience = job.Min_experience
 			filter.Education = job.Min_education
 			filter.Salary = job.Salary
-			fmt.Printf("job.Salary is %d and filter.Salary is %d\n",job.Salary,filter.Salary)
-			bOk, msg = validateSearchCriteria(filter) 			
+			bOk, msg = validateSearchCriteria(filter)
+			break
+		case 3: 
+			// detail
+			job.Creator = user.Email
+			bOk, msg = validateDetailRequest(job)
+			break
+		case 4: 
+			// jobs offered search
+			job.Creator = user.Email
+			bOk, msg = validateOfferedAppliedRequest(job)
+			break
+		case 5: 
+			// jobs applied search
+			job.Creator = user.Email
+			bOk, msg = validateOfferedAppliedRequest(job)
+			break 				 				 			
 	} 
 	return bOk,msg 
 }
 
 // Check that all information needed to create a user is specified,
 // and that the individual field values have valid format
-func validateUserInfo(user data.User_info) (bOk bool, msg string) {
+func validateUserInfo(user *data.User_info) (bOk bool, msg string) {
 	bOk, msg = validateEmail(user.Email)
 	if bOk {
 		bOk, msg = validateFirstLastName(user.First, "first")
@@ -77,11 +97,18 @@ func validateUserInfo(user data.User_info) (bOk bool, msg string) {
 // and that the individual field values have valid format
 // If "is_create" then we are creating a new job and all fields are required
 // Otherwise, the user can specify only the values that are to be changed
-func validateJobInfo(job data.Job_info, is_create bool) (bOk bool, msg string) {
+func validateJobInfo(job *data.Job_info, is_create bool) (bOk bool, msg string) {
 	bOk, msg = validateEmail(job.Creator)
+	if bOk {
+		bRegistered, _ := dbaccess.IsRegisteredUser(job.Creator)
+		if !bRegistered {
+			bOk = false
+			msg = "Unknown user email"
+		}
+	}
 	if bOk && is_create {
 		bOk, msg = validateNonEmpty(job.Title,"title")
-	}	
+	}			
 	if bOk && is_create {
 		bOk, msg = validateNonEmpty(job.Description, "description")
 	}	
@@ -100,16 +127,25 @@ func validateJobInfo(job data.Job_info, is_create bool) (bOk bool, msg string) {
 // Check the specified search criteria
 // All are optional except for the user, but numeric values have limits
 // If nothing is specified, the search will return all jobs
-func validateSearchCriteria(filter data.Search_criteria) (bOk bool, msg string) {
+func validateSearchCriteria(filter *data.Search_criteria) (bOk bool, msg string) {
 	bOk, msg = validateEmail(filter.User_email)
-	fmt.Printf("in validateSearchCriteria, filter.Salary is %d\n",filter.Salary)
+	if bOk {
+		bRegistered, _ := dbaccess.IsRegisteredUser(filter.User_email)
+		if !bRegistered {
+			bOk = false
+			msg = "Unknown user email"
+		}
+	}	
 	if bOk && filter.Posted != ""{
 		bOk, msg = validateDate(filter.Posted)
 		if bOk {
 			// add a time for DB search
 			filter.Posted += " 00:01 +700"
 		}
-	}	
+	}
+	if bOk && (filter.Experience != 0) {
+		bOk, msg = validateExperience(filter.Experience)
+	}		
 	if bOk && (filter.Education != 0) {
 		bOk, msg = validateEducation(filter.Education)
 	}
@@ -119,6 +155,46 @@ func validateSearchCriteria(filter data.Search_criteria) (bOk bool, msg string) 
 	// no constraints on keyword criterion
 	return bOk, msg
 }
+
+// check to see that the ID is set and is a positive integer
+func validateDetailRequest(job *data.Job_info) (bOk bool, msg string) {	
+	bOk, msg = validateEmail(job.Creator) // not really the creator... just use this field
+	if bOk {
+		bRegistered, _ := dbaccess.IsRegisteredUser(job.Creator)
+		if !bRegistered {
+			bOk = false
+			msg = "Unknown user email"
+		}
+	}	
+	if bOk {
+		idstring := job.Job_id
+		idval, err := strconv.Atoi(idstring)
+		if (err != nil) || (idval <= 0) {
+			bOk = false 
+			msg = "Invalid job ID specified"
+		} else {
+			bOk = true
+			msg = ""
+		}
+	}
+	return bOk, msg
+}
+
+// Specialized searches
+// The only required argument is the email, which is interpreted differently
+// depending on the task
+func validateOfferedAppliedRequest(job *data.Job_info) (bOk bool, msg string) {	
+	bOk, msg = validateEmail(job.Creator) // not really the creator... just use this field
+	if bOk {
+		bRegistered, _ := dbaccess.IsRegisteredUser(job.Creator)
+		if !bRegistered {
+			bOk = false
+			msg = "Unknown user email"
+		}
+	}	
+	return bOk, msg
+}
+
 
 // check to see if the passed date assumed to be in form YYYY-MM-DD is valid
 func validateDate(datestring string) (bOk bool, msg string) {

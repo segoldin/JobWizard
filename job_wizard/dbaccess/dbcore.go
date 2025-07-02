@@ -7,6 +7,7 @@ import (
     "database/sql"
     "fmt"
     "os"
+    "strconv"
     "time"
     "github.com/segoldin/JobWizard/job_wizard/data"      
     "github.com/joho/godotenv"     
@@ -53,6 +54,24 @@ func CheckConnection() bool {
     } else {
         return true
     }    
+}
+
+func IsRegisteredUser(user_email string) (bRegistered bool, err error) {
+    db, err = connectDb(dbname)
+    if err != nil {
+        return false, err
+    }     
+    sqlcmd := fmt.Sprintf("SELECT id FROM user WHERE user_email='%s'",user_email)
+    row := db.QueryRow(sqlcmd)
+    var id int
+    err = row.Scan(&id)
+    if err != nil {
+        bRegistered = false
+    } else {
+        bRegistered = true
+    }
+    return bRegistered, nil
+
 }
 
 // Function to create a new user, implementing the Register use case
@@ -133,19 +152,27 @@ func CreateJob(creator_email string, title string, desc string, education int, e
 
 // Function to search for jobs based on criteria, implementing the Search Jobs use case
 // Returns an array of job summary structures in posted date order (descending) or error
-func SearchJobs(posted string, min_education int, salary int, keyword string) (summaries []data.Job_summary, err error) {
+func SearchJobs(posted_criterion string, min_experience int, min_education int, salary int, keyword string) (summaries []data.Job_summary, err error) {
     var added_where = false   
-    fmt.Printf("Salary is %d\n",salary)
-     
     sqlcmd := "SELECT id,title,is_open,created FROM job "
-    if posted != "" {
+    if posted_criterion != "" {
         if !added_where {
             sqlcmd += " where "
             added_where = true
         }
-        clause := fmt.Sprintf(" created >= '%s' ",posted)
+        clause := fmt.Sprintf(" created >= '%s' ",posted_criterion)
         sqlcmd += clause
     }
+   if min_experience != 0 {
+        if !added_where {
+            sqlcmd += " where "
+            added_where = true
+        } else {
+            sqlcmd += " and "
+        }
+        clause := fmt.Sprintf(" min_years_experience <= %d ",min_experience)
+        sqlcmd += clause
+    }    
     if min_education != 0 {
         if !added_where {
             sqlcmd += " where "
@@ -176,6 +203,85 @@ func SearchJobs(posted string, min_education int, salary int, keyword string) (s
         clause := fmt.Sprintf(" title like '%%%s%%' ",keyword)
         sqlcmd += clause
     }
-    fmt.Printf("sqlcmd is |%s|\n",sqlcmd)
+    sqlcmd += " order by created desc"   
+    summaries, err = doSearchOperation(sqlcmd)
+    return summaries, err
+}
+
+// Function to get all the detail for a particular job, implementing the Show Job Detail use case
+// Returns a filled in job structure if the job id is found
+func GetJobDetail(job_id string) (foundjob data.Job_info, err error) {
+    db,err = connectDb(dbname)
+    if err != nil {
+        return foundjob, err
+    }     
+    id, _ := strconv.Atoi(job_id)  // we already validated this 
+    sqlcmd := "SELECT created_by, title, description, min_education, min_years_experience, salary, is_open, created"
+    whereclause := fmt.Sprintf(" from job where id = %d", id);
+    sqlcmd = sqlcmd + whereclause
+    row := db.QueryRow(sqlcmd)
+    err = row.Scan(&foundjob.Creator,&foundjob.Title,&foundjob.Description,
+         &foundjob.Min_education,&foundjob.Min_experience,&foundjob.Salary,&foundjob.Is_open,&foundjob.Date_posted)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return foundjob, fmt.Errorf("No matching job found")
+        } else {
+            return foundjob, err
+        }
+    }
+    foundjob.Job_id = fmt.Sprintf("%05d",id)
+    foundjob.Date_posted = foundjob.Date_posted[0:10]
+    return foundjob, nil 
+}
+
+// Function to search for jobs offered by a particular user
+func SearchOfferedJobs(user_email string) (summaries []data.Job_summary, err error) {
+    sqlcmd := fmt.Sprintf("SELECT id,title,is_open,created FROM job where created_by='%s'",user_email)
+    sqlcmd += " order by created desc"
+    summaries, err = doSearchOperation(sqlcmd)
+    return summaries, err
+}
+
+// Function to search for jobs applied to by a particular user
+func SearchAppliedJobs(user_email string) (summaries []data.Job_summary, err error) {
+    sqlcmd := "SELECT j.id,j.title,j.is_open,j.created FROM job j, job_applications ja "
+    sqlcmd += " where j.id=ja.job_id and "
+    sqlcmd += fmt.Sprintf("ja.user_email='%s'",user_email)
+    sqlcmd += " order by created desc"
+    summaries, err = doSearchOperation(sqlcmd)
+    return summaries, err
+}
+
+// This function is a factorization that handles searching for jobs 
+// and returning summaries
+// It is called by three different tasks, which use different criteria/queries
+// but otherwise handle the return information the same way
+func doSearchOperation(sqlcmd string) (summaries []data.Job_summary, err error) {    
+    db,err = connectDb(dbname)
+    if err != nil {
+        return summaries, err
+    } 
+    rows,err := db.Query(sqlcmd)
+    if err != nil {
+        return summaries, err
+    }
+    defer rows.Close()
+    var idval int
+    var title string
+    var is_open bool
+    var posted string
+    for rows.Next() {
+        err = rows.Scan(&idval,&title,&is_open,&posted)
+        if err != nil {
+            rows.Close()
+            return summaries, err
+        }
+        var job data.Job_summary
+        job.Job_id = fmt.Sprintf("%05d",idval)
+        job.Title = title
+        job.Is_open = is_open
+        job.Date_posted = posted[0:10] 
+        summaries = append(summaries,job)
+    }
     return summaries, nil
 }

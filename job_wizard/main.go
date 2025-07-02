@@ -3,13 +3,14 @@ package main
 // Created by Sally Goldin, 18 June 2025
 
 import (
-    "fmt"
+    "encoding/json"
     "flag"
+    "fmt"
     //"log"
     "os"
     "path/filepath" 
-    "github.com/segoldin/JobWizard/job_wizard/dbaccess"
     "github.com/segoldin/JobWizard/job_wizard/data"    
+    "github.com/segoldin/JobWizard/job_wizard/dbaccess"
     //"github.com/segoldin/JobWizard/job_wizard/api"
     "github.com/segoldin/JobWizard/job_wizard/api/middlewares"        
     "github.com/joho/godotenv"
@@ -51,6 +52,8 @@ func main() {
     //   uses "min_education" ==> job.Min_education
     //   uses "salary"==> job.Salary
     flag.StringVar(&filter.Keyword,"keyword","","Keyword for title search")  
+    // arguments for detail task
+    flag.StringVar(&job.Job_id,"job_id","","Id of job to be displayed")
     flag.Parse()
     if server {
         setupAPI()
@@ -87,11 +90,12 @@ func commandLineFunction() {
         fmt.Println("Connection to DB failed")
         os.Exit(1)
     }
-    valid, msg := validateTaskArgs(task,user,job,filter)
+    valid, msg := validateTaskArgs(task,&user,&job,&filter)
     if !valid {
         jsonErrorOutput(msg)
         os.Exit(1)
     }
+
     task_index := findTask(task)  // we have already validated the task above
     jsonResponse := dispatch(task_index)
     fmt.Println(jsonResponse)
@@ -119,13 +123,60 @@ func dispatch(task_index int) (jsonResponse string) {
             } else {
                 jsonResponse = fmt.Sprintf("{ \"job_id\" : \"%s\" }\n",job_id)  
             }
-       case 2:
-            summaries, err := dbaccess.SearchJobs(filter.Posted, filter.Education, filter.Salary, filter.Keyword) 
+        case 2:
+            summaries, err := dbaccess.SearchJobs(filter.Posted, filter.Experience, filter.Education, filter.Salary, filter.Keyword) 
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else if len(summaries) == 0 {
+                jsonResponse = "{ \"warning\" : \"No matching jobs found\"}"
+            } else {
+                resp, err := json.Marshal(summaries)
+                if err != nil {
+                    jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+                } else {
+                    jsonResponse = string(resp)
+                } 
+            }
+        case 3:
+            return_job, err := dbaccess.GetJobDetail(job.Job_id)
             if err != nil {
                 jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
             } else {
-                jsonResponse = fmt.Sprintf("{ \"success\" : \"%d \" }\n", len(summaries))  
-            }            
+                resp, err := json.Marshal(return_job)
+                if err != nil {
+                    jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+                } else {
+                    jsonResponse = string(resp)
+                } 
+            }
+        case 4:
+            summaries, err := dbaccess.SearchOfferedJobs(job.Creator) 
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else if len(summaries) == 0 {
+                jsonResponse = "{ \"warning\" : \"No matching jobs found\"}"
+            } else {
+                resp, err := json.Marshal(summaries)
+                if err != nil {
+                    jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+                } else {
+                    jsonResponse = string(resp)
+                } 
+            }
+       case 5:
+            summaries, err := dbaccess.SearchAppliedJobs(job.Creator) 
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else if len(summaries) == 0 {
+                jsonResponse = "{ \"warning\" : \"No matching jobs found\"}"
+            } else {
+                resp, err := json.Marshal(summaries)
+                if err != nil {
+                    jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+                } else {
+                    jsonResponse = string(resp)
+                } 
+            }                    
     }
     return jsonResponse
 }
