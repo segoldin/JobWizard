@@ -32,6 +32,7 @@ type Job_summary struct {
 type Search_criteria struct {
     User_email       string         
     Posted           string 
+    Experience       int    
     Education        int
     Salary           int
     Keyword          string
