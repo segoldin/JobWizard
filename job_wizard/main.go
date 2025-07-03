@@ -23,14 +23,19 @@ import (
 var (
     server         bool
     task           string
+    help           bool
+    taskhelp       bool
     user           data.User_info
     job            data.Job_info
     filter         data.Search_criteria
+    submission     data.Submission
 )
 
 
 func main() {
-    flag.BoolVar(&server, "server", false, "Specify as true to expose REST API")    
+    flag.BoolVar(&server, "server", false, "Specify as true to expose REST API")
+    flag.BoolVar(&help, "help", false, "Specify as true to see general help")
+    flag.BoolVar(&help, "taskhelp", false, "Specify as true to help for one task")               
     flag.StringVar(&task, "task", "", "Task to perform")
     // see validate.go for a list of defined tasks
     // arguments for register
@@ -46,6 +51,7 @@ func main() {
     flag.IntVar(&job.Min_education,"min_education",0,"Minimum education level required - integer from 0 to 4")   
     flag.IntVar(&job.Min_experience,"min_experience",0,"Minimum years of experience desired - integer")
     flag.IntVar(&job.Salary,"salary",0,"Monthly salary offered - integer, max 1 million")
+    flag.BoolVar(&job.Is_open,"is_open",true,"Is the job still open?")    
     // arguments for search jobs
     //   uses "email" ==> user.Email
     flag.StringVar(&filter.Posted,"posted","","Posted date in format YYYY-MM-DD") 
@@ -55,6 +61,9 @@ func main() {
     // arguments for detail task
     flag.StringVar(&job.Job_id,"job_id","","Id of job to be displayed")
     flag.Parse()
+    if help {
+        usage("")
+    } 
     if server {
         setupAPI()
     } else {
@@ -62,6 +71,47 @@ func main() {
     }
 }
 
+// display information about the arguments for each task
+// or for a single task as specified by task_name
+func usage(task_name string) {
+    fmt.Println("General usage: ./job_wizard -task <taskname> [arguments...]")
+    fmt.Println("\tWrites results to standard output in JSON format\n")
+    if task_name == "" {
+        fmt.Println("Available tasks: ")
+        fmt.Println("\tregister - create a new user in the database")
+        fmt.Println("\tcreate - create a new job posting")
+        fmt.Println("\tsearch - general search for jobs")
+        fmt.Println("\tdetail - see detailed information about a selected job")
+        fmt.Println("\toffered - search for jobs created by me")
+        fmt.Println("\tapplied - search for jobs that I have applied for")
+        fmt.Println("\tmodify - modify a job created by me")
+        fmt.Println("\tsubmit - submit an application for a job\n")
+        fmt.Println("For task arguments, type ./job_wizard -taskhelp <task_name>\n")
+        return                       
+    } 
+    task_index := findTask(task_name)
+    if (task_index < 0) {
+        fmt.Printf("Unknown task '%s'\n",task_name)
+        return
+    }
+    switch(task_index) {
+        case 0: // register
+          
+        case 1: // create
+         
+        case 2: // search
+  
+        case 3: // detail
+ 
+        case 4: // offered
+ 
+        case 5: // applied
+
+        case 6: // modify job
+ 
+        case 7: // submit application for job        
+    }
+}
 func setupAPI() {
     err := recordPid() // create a pid file so we can later kill the process
     if err != nil {
@@ -90,7 +140,7 @@ func commandLineFunction() {
         fmt.Println("Connection to DB failed")
         os.Exit(1)
     }
-    valid, msg := validateTaskArgs(task,&user,&job,&filter)
+    valid, msg := validateTaskArgs(task,&user,&job,&filter,&submission)
     if !valid {
         jsonErrorOutput(msg)
         os.Exit(1)
@@ -176,7 +226,24 @@ func dispatch(task_index int) (jsonResponse string) {
                 } else {
                     jsonResponse = string(resp)
                 } 
-            }                    
+            } 
+        case 6: // modify job
+            job_id, err := dbaccess.ModifyJob(job.Creator,job.Job_id,job.Title,job.Description,job.Min_education,
+                             job.Min_experience,job.Salary,job.Is_open)
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else {
+                jsonResponse = fmt.Sprintf("{ \"modified_job_id\" : \"%s\" }\n",job_id)
+            }
+        case 7: // submit application for job
+            job_id, err := dbaccess.SubmitJobApplication(submission.Email,submission.Job_id)                       
+            if err != nil && job_id == "" {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"warning\" : \"%v\" }\n",err)
+            } else {
+                jsonResponse = fmt.Sprintf("{ \"applied_job_id\" : \"%s\" }\n",job_id)
+            }           
     }
     return jsonResponse
 }

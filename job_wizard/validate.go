@@ -12,7 +12,7 @@ import (
     "github.com/segoldin/JobWizard/job_wizard/dbaccess"      
 )
 
-var tasklist = [...]string{"register","create","search","detail","offered","applied"} 
+var tasklist = [...]string{"register","create","search","detail","offered","applied","modify","submit"} 
 
 const (
 	timeFormatString = "2006-01-02 15:04 +700"
@@ -34,7 +34,7 @@ func findTask(task string) (index int) {
 // Pass all structs used for arguments 
 // Note that some fields are used by multiple tasks
 // We pass pointers so that any changes or copying gets preserved in the caller
-func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, filter *data.Search_criteria) (bOk bool, msg string) {
+func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, filter *data.Search_criteria, submission *data.Submission) (bOk bool, msg string) {
 	bOk = true
 	taskIndex := findTask(task)
 	if taskIndex < 0 {
@@ -69,7 +69,15 @@ func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 			// jobs applied search
 			job.Creator = user.Email
 			bOk, msg = validateOfferedAppliedRequest(job)
-			break 				 				 			
+			break 
+		case 6:
+			bOk, msg = validateJobInfo(job, false) 
+			break
+		case 7:
+			submission.Email = user.Email
+			submission.Job_id = job.Job_id
+			bOk, msg = validateJobSubmission(submission) 
+			break									 				 			
 	} 
 	return bOk,msg 
 }
@@ -106,6 +114,17 @@ func validateJobInfo(job *data.Job_info, is_create bool) (bOk bool, msg string) 
 			msg = "Unknown user email"
 		}
 	}
+	if bOk && !is_create {
+		idstring := job.Job_id
+		idval, err := strconv.Atoi(idstring)
+		if (err != nil) || (idval <= 0) {
+			bOk = false 
+			msg = "Invalid job ID specified"
+		} else {
+			bOk = true
+			msg = ""
+		}
+	}	
 	if bOk && is_create {
 		bOk, msg = validateNonEmpty(job.Title,"title")
 	}			
@@ -180,6 +199,30 @@ func validateDetailRequest(job *data.Job_info) (bOk bool, msg string) {
 	return bOk, msg
 }
 
+// check to see that the ID is set and is a positive integer
+func validateJobSubmission(submission *data.Submission) (bOk bool, msg string) {	
+	bOk, msg = validateEmail(submission.Email) 
+	if bOk {
+		bRegistered, _ := dbaccess.IsRegisteredUser(submission.Email)
+		if !bRegistered {
+			bOk = false
+			msg = "Unknown user email"
+		}
+	}	
+	if bOk {
+		idstring := submission.Job_id
+		idval, err := strconv.Atoi(idstring)
+		if (err != nil) || (idval <= 0) {
+			bOk = false 
+			msg = "Invalid job ID specified"
+		} else {
+			bOk = true
+			msg = ""
+		}
+	}
+	return bOk, msg
+}
+
 // Specialized searches
 // The only required argument is the email, which is interpreted differently
 // depending on the task
@@ -194,6 +237,8 @@ func validateOfferedAppliedRequest(job *data.Job_info) (bOk bool, msg string) {
 	}	
 	return bOk, msg
 }
+
+
 
 
 // check to see if the passed date assumed to be in form YYYY-MM-DD is valid
