@@ -12,7 +12,7 @@ import (
     "github.com/segoldin/JobWizard/job_wizard/dbaccess"      
 )
 
-var tasklist = [...]string{"register","create","search","detail","offered","applied","modify","submit"} 
+var tasklist = [...]string{"register","create","search","detail","offered","applied","modify","submit","candidates"} 
 
 const (
 	timeFormatString = "2006-01-02 15:04 +700"
@@ -73,11 +73,16 @@ func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 		case 6:
 			bOk, msg = validateJobInfo(job, false) 
 			break
-		case 7:
+		case 7: // submit a job application
 			submission.Email = user.Email
 			submission.Job_id = job.Job_id
 			bOk, msg = validateJobSubmission(submission) 
-			break									 				 			
+			break
+		case 8: // candidates
+			job.Creator = user.Email
+			// same arguments as detail request
+			bOk, msg = validateDetailRequest(job)
+			break											 				 			
 	} 
 	return bOk,msg 
 }

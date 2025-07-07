@@ -88,7 +88,8 @@ func customUsage() {
     fmt.Println("\toffered\t\tSearch for jobs created by me")
     fmt.Println("\tapplied\t\tSearch for jobs that I have applied for")
     fmt.Println("\tmodify\t\tModify a job created by me")
-    fmt.Println("\tsubmit\t\tSubmit an application for a job\n")
+    fmt.Println("\tsubmit\t\tSubmit an application for a job")
+    fmt.Println("\tcandidates\tGet applicants for a specific job\n")    
     fmt.Println("For task-specific arguments, type ./job_wizard -help=true -task <task_name>\n")
     os.Exit(0)                      
 }
@@ -181,7 +182,15 @@ func customUsageTask(task_name string) {
             fmt.Println("\t-job_id <apply for what job>\n")                  
             fmt.Println("All arguments are required\n")    
             fmt.Println("Example: ./job_wizard -task submit -email sally@gmail.com -job_id 00014\n")
-            break           
+            break
+        case 8: // view candidates
+            fmt.Println("Return candidates for a specific job")
+            fmt.Println("Arguments for candidates task:")
+            fmt.Println("\t-creator <email of job creator>")
+            fmt.Println("\t-job_id <show candidates for what job>\n")
+            fmt.Println("All arguments are required\n")    
+            fmt.Println("Example: ./job_wizard -task candidates -email sally@gmail.com -job_id 00003\n")
+            break                       
         default:
             fmt.Println("Invalid task specified\n")                     
     }
@@ -321,7 +330,21 @@ func dispatch(task_index int) (jsonResponse string) {
                 jsonResponse = fmt.Sprintf("{ \"warning\" : \"%v\" }\n",err)
             } else {
                 jsonResponse = fmt.Sprintf("{ \"applied_job_id\" : \"%s\" }\n",job_id)
-            }           
+            }       
+        case 8: // candidates
+            candidates, err := dbaccess.SearchCandidates(job.Creator,job.Job_id) 
+            if err != nil {
+                jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+            } else if len(candidates) == 0 {
+                jsonResponse = "{ \"warning\" : \"No candidates found\"}"
+            } else {
+                resp, err := json.Marshal(candidates)
+                if err != nil {
+                    jsonResponse = fmt.Sprintf("{ \"error\" : \"%v\" }\n",err)
+                } else {
+                    jsonResponse = string(resp)
+                } 
+            }                  
     }
     return jsonResponse
 }

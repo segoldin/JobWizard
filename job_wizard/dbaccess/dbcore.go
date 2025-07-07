@@ -300,16 +300,22 @@ func ModifyJob(creator_email string, job_id string, title string, desc string, e
     }
     return_job_id = job_id
     // First, check that this job exists and that it was created by this user
+    // Also get the is_open flag. We don't allow a job to be marked as filled twice
+    // BUT it *can* be reopened
     idval, _ := strconv.Atoi(job_id) 
-    sqlcmd := fmt.Sprintf("select created_by from job where id=%d", idval)
+    sqlcmd := fmt.Sprintf("select created_by, is_open from job where id=%d", idval)
     row := db.QueryRow(sqlcmd)
     var created_by string
-    err = row.Scan(&created_by)  
+    var open_flag bool
+    err = row.Scan(&created_by, &open_flag)  
     if err != nil {
         return "00000", fmt.Errorf("No matching job found")
     }
     if !strings.EqualFold(creator_email, created_by) {
         return "00000", fmt.Errorf("Specified user did not create this job")
+    }
+    if (open_flag == false) && (is_open == false) {
+        return "00000", fmt.Errorf("Job has already been filled")
     }
     sqlcmd = constructUpdateCommand(idval, title, desc, education, experience, salary, is_open)
     _, err = db.Exec(sqlcmd)
@@ -373,7 +379,7 @@ func constructUpdateCommand(idval int, title string, desc string, education int,
         firstColumn = false        
     }
     sqlcmd = fmt.Sprintf("UPDATE job set %s WHERE id = %d",values,idval)
-    fmt.Println(sqlcmd)
+    //fmt.Println(sqlcmd)
     return sqlcmd    
 }
 
@@ -434,4 +440,56 @@ func SubmitJobApplication(user_email string, job_id string) (applied_job_id stri
     } else {
         return applied_job_id, nil
     }
+}
+
+// Search for anyone who has applied for a specific job 
+// This must be a job created by the 'creator' email
+// Returns a list of Candidate structures or an error
+func SearchCandidates(creator_email string, job_id string) (candidates []data.Candidate, err error) {
+    db,err = connectDb(dbname)
+    if err != nil {
+          return candidates, err
+    }
+    // First, check that this job exists and that it was created by this user
+    idval, _ := strconv.Atoi(job_id) 
+    sqlcmd := fmt.Sprintf("select created_by, is_open from job where id=%d", idval)
+    row := db.QueryRow(sqlcmd)
+    var created_by string
+    var open_flag bool
+    err = row.Scan(&created_by, &open_flag)  
+    if err != nil {
+        return candidates, fmt.Errorf("No matching job found")
+    }
+    if !strings.EqualFold(creator_email, created_by) {
+        return candidates, fmt.Errorf("Specified user did not create this job")
+    }
+    // okay... let's join the applicants and user table
+    formatString := "SELECT a.user_email, a.apply_time, u.first_name, u.last_name, u.phone " +
+       "FROM job_applications a, user u where a.user_email=u.user_email AND " +
+       "a.job_id=%d order by a.apply_time" 
+    sqlcmd = fmt.Sprintf(formatString,idval)
+    rows,err := db.Query(sqlcmd)
+    if err != nil {
+        return candidates, err
+    }
+    defer rows.Close()
+    var email string
+    var applied_time string
+    var first string
+    var last string
+    var phone string
+    for rows.Next() {
+        err = rows.Scan(&email, &applied_time, &first, &last, &phone)
+        if err != nil {
+            rows.Close()
+            return candidates, err
+        }
+        var applicant data.Candidate
+        applicant.Email = email
+        applicant.Name = first + " " + last
+        applicant.Phone = phone
+        applicant.Applied_date = applied_time[0:10]
+        candidates = append(candidates,applicant)
+    }
+    return candidates, nil    
 }
