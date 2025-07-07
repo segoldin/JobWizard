@@ -35,7 +35,6 @@ var (
 func main() {
     flag.BoolVar(&server, "server", false, "Specify as true to expose REST API")
     flag.BoolVar(&help, "help", false, "Specify as true to see general help")
-    flag.BoolVar(&help, "taskhelp", false, "Specify as true to help for one task")               
     flag.StringVar(&task, "task", "", "Task to perform")
     // see validate.go for a list of defined tasks
     // arguments for register
@@ -60,9 +59,14 @@ func main() {
     flag.StringVar(&filter.Keyword,"keyword","","Keyword for title search")  
     // arguments for detail task
     flag.StringVar(&job.Job_id,"job_id","","Id of job to be displayed")
+    flag.Usage = customUsage
     flag.Parse()
     if help {
-        usage("")
+        if task != "" {
+            customUsageTask(task)
+        } else {
+            customUsage()
+        }
     } 
     if server {
         setupAPI()
@@ -73,45 +77,119 @@ func main() {
 
 // display information about the arguments for each task
 // or for a single task as specified by task_name
-func usage(task_name string) {
-    fmt.Println("General usage: ./job_wizard -task <taskname> [arguments...]")
+func customUsage() {
+    fmt.Println("\nGeneral usage: ./job_wizard -task <taskname> [arguments...]")
     fmt.Println("\tWrites results to standard output in JSON format\n")
-    if task_name == "" {
-        fmt.Println("Available tasks: ")
-        fmt.Println("\tregister - create a new user in the database")
-        fmt.Println("\tcreate - create a new job posting")
-        fmt.Println("\tsearch - general search for jobs")
-        fmt.Println("\tdetail - see detailed information about a selected job")
-        fmt.Println("\toffered - search for jobs created by me")
-        fmt.Println("\tapplied - search for jobs that I have applied for")
-        fmt.Println("\tmodify - modify a job created by me")
-        fmt.Println("\tsubmit - submit an application for a job\n")
-        fmt.Println("For task arguments, type ./job_wizard -taskhelp <task_name>\n")
-        return                       
-    } 
+    fmt.Println("Available tasks: ")
+    fmt.Println("\tregister\tCreate a new user in the database")
+    fmt.Println("\tcreate\t\tCreate a new job posting")
+    fmt.Println("\tsearch\t\tGeneral search for jobs")
+    fmt.Println("\tdetail\t\tSee detailed information about a selected job")
+    fmt.Println("\toffered\t\tSearch for jobs created by me")
+    fmt.Println("\tapplied\t\tSearch for jobs that I have applied for")
+    fmt.Println("\tmodify\t\tModify a job created by me")
+    fmt.Println("\tsubmit\t\tSubmit an application for a job\n")
+    fmt.Println("For task-specific arguments, type ./job_wizard -help=true -task <task_name>\n")
+    os.Exit(0)                      
+}
+
+
+// display information about the arguments for a single task as specified by task_name
+func customUsageTask(task_name string) {
+    fmt.Println("\nGeneral usage: ./job_wizard -task <taskname> [arguments...]")
+    fmt.Println("\tWrites results to standard output in JSON format\n")
     task_index := findTask(task_name)
     if (task_index < 0) {
         fmt.Printf("Unknown task '%s'\n",task_name)
-        return
+        os.Exit(0)
     }
     switch(task_index) {
         case 0: // register
-          
+            fmt.Println("Register a new email as a JobWizard user")
+            fmt.Println("Arguments for register task:")
+            fmt.Println("\t-email <NEW email address>")
+            fmt.Println("\t-first <first name>")
+            fmt.Println("\t-last <last name>")
+            fmt.Println("\t-phone <10 digit Thai phone>")
+            fmt.Println("\t-education <integer 0 to 4>")
+            fmt.Println("All arguments are required\n")
+            fmt.Println("Example: ./job_wizard -task register -email sally@gmail.com -first Sally -last Goldin -phone 0987651122 -education 4\n")
+            break;               
         case 1: // create
-         
+            fmt.Println("Create a new job posting in the JobWizard database")
+            fmt.Println("Arguments for create task:")
+            fmt.Println("\t-creator <email of registered user>")
+            fmt.Println("\t-title <job title in quotes>")
+            fmt.Println("\t-description <job description in quotes, up to 1024 chars>")
+            fmt.Println("\t-min_education <integer 0 to 4>")
+            fmt.Println("\t-min_experience <integer 0 to 75>")
+            fmt.Println("\t-salary <monthly salary in baht, 0 means unspecified>")
+            fmt.Println("Creator, title and description are required\n")
+            fmt.Println("Example: ./job_wizard -task create -creator sally@gmail.com -title \"Front End Developer\" -description \"Build user interfaces for enterprise web applications\" -min_education 2 -salary 35000\n")         
+            break
         case 2: // search
-  
+            fmt.Println("Search for jobs based on criteria, and print summaries")
+            fmt.Println("Arguments for search task:")
+            fmt.Println("\t-email <email of registered user>")          
+            fmt.Println("\t-min_education <integer 1 to 4>")
+            fmt.Println("\t-min_experience <integer >")
+            fmt.Println("\t-salary <monthly salary in baht>")          
+            fmt.Println("\t-posted <date: YYYY-MM-DD>")
+            fmt.Println("\t-keyword <keyword to search for in title>")          
+            fmt.Println("Only email is required\n")
+            fmt.Println("Example: ./job_wizard -task search -email sally@gmail.com -salary 30000 -keyword Developer\n")
+            break
         case 3: // detail
- 
+            fmt.Println("Return all detailed information for a specific job")
+            fmt.Println("Arguments for detail task:")
+            fmt.Println("\t-email <email of registered user>")
+            fmt.Println("\t-job_id <show detail for what job>\n")
+            fmt.Println("All arguments are required\n")    
+            fmt.Println("Example: ./job_wizard -task detail -email sally@gmail.com -job_id 00003\n")
+            break
         case 4: // offered
- 
+            fmt.Println("Return summaries for all jobs created/posted by a user")
+            fmt.Println("Arguments for offered task:")
+            fmt.Println("\t-creator <email of registered job creator>")
+            fmt.Println("All arguments are required\n")    
+            fmt.Println("Example: ./job_wizard -task offered -creator sally@gmail.com\n")
+            break
         case 5: // applied
-
+            fmt.Println("Return summaries for all jobs a user has applied for")
+            fmt.Println("Arguments for applied task:")
+            fmt.Println("\t-email <email of registered user>")
+            fmt.Println("All arguments are required\n")    
+            fmt.Println("Example: ./job_wizard -task applied -email sally@gmail.com\n")
         case 6: // modify job
- 
-        case 7: // submit application for job        
+            fmt.Println("Modify some attributes of a specific job")
+            fmt.Println("Arguments for modify task:")
+            fmt.Println("\t-creator <email of registered user>")
+            fmt.Println("\t-job_id <modify what job>")            
+            fmt.Println("\t-title <job title in quotes>")
+            fmt.Println("\t-description <job description in quotes, up to 1024 chars>")
+            fmt.Println("\t-min_education <integer 0 to 4>")
+            fmt.Println("\t-min_experience <integer 0 to 75>")
+            fmt.Println("\t-salary <monthly salary in baht, 0 means unspecified>")
+            fmt.Println("\t-is_open=false")
+            fmt.Println("Creator and job_id are required, changes any other attributes specified\n")
+            fmt.Println("Example: ./job_wizard -task modify -creator sally@gmail.com -job_id 00002 -title \"User Experience Developer\" -salary 38000\n")         
+            break
+        case 7: // submit application for job
+            fmt.Println("Apply for a particular job (submit application)")
+            fmt.Println("Arguments for submit task:")
+            fmt.Println("\t-email <email of registered user>")
+            fmt.Println("\t-job_id <apply for what job>\n")                  
+            fmt.Println("All arguments are required\n")    
+            fmt.Println("Example: ./job_wizard -task submit -email sally@gmail.com -job_id 00014\n")
+            break           
+        default:
+            fmt.Println("Invalid task specified\n")                     
     }
+    os.Exit(0)
 }
+
+
+
 func setupAPI() {
     err := recordPid() // create a pid file so we can later kill the process
     if err != nil {
