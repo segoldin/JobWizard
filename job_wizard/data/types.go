@@ -47,3 +47,11 @@ type Submission struct {
     Email           string   `json:"email"`
     Job_id          string   `json:"job_id"`   
 }
+
+// Used for returning information about an applicant
+type Candidate struct {
+    Email           string   `json:"email"`
+    Name            string   `json:"name"`  // concatenated first and last name
+    Phone           string   `json:"phone"`
+    Applied_date    string   `json:"applied_date"`
+}
