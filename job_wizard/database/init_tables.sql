@@ -43,10 +43,11 @@ CREATE TABLE IF NOT EXISTS job (
 	created varchar(32)             -- always a good idea to save a time stamp   
 );
 
-CREATE TABLE IF NOT EXISTS job_applications (
+CREATE TABLE IF NOT EXISTS job_application (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	job_id int,              -- job ID with leading zeros
 	user_email varchar(32),  -- user who has applied
-	apply_time varchar(32)
+	apply_time varchar(32),
+	UNIQUE(job_id, user_email)  -- You can only apply once for a job
 );
 
