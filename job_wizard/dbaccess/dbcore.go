@@ -220,7 +220,7 @@ func SearchOfferedJobs(user_email string) (summaries []data.Job_summary, err err
 
 // Function to search for jobs applied to by a particular user
 func SearchAppliedJobs(user_email string) (summaries []data.Job_summary, err error) {
-    sqlcmd := "SELECT j.id,j.title,j.is_open,j.created FROM job j, job_applications ja "
+    sqlcmd := "SELECT j.id,j.title,j.is_open,j.created FROM job j, job_application ja "
     sqlcmd += " where j.id=ja.job_id and "
     sqlcmd += fmt.Sprintf("ja.user_email='%s'",user_email)
     sqlcmd += " order by created desc"
@@ -426,12 +426,17 @@ func SubmitJobApplication(user_email string, job_id string) (applied_job_id stri
     now := time.Now()
     nowstring := now.Format(timeFormatString)     
     sqlcmd = 
-      fmt.Sprintf("INSERT INTO job_applications (job_id, user_email,apply_time) VALUES (%d,'%s','%s')",
+      fmt.Sprintf("INSERT INTO job_application (job_id, user_email,apply_time) VALUES (%d,'%s','%s')",
        idval, user_email, nowstring) 
     _,err = tx.Exec(sqlcmd)
     if err != nil {
         tx.Rollback()
-        return "",err
+        testErr := fmt.Sprintf("%v",err)
+        if strings.Contains(testErr,"UNIQUE") {
+            return "", fmt.Errorf("Attempt to create duplicate job application")
+        } else {
+            return "",err
+        }
     }
     tx.Commit()
     applied_job_id = job_id
@@ -465,7 +470,7 @@ func SearchCandidates(creator_email string, job_id string) (candidates []data.Ca
     }
     // okay... let's join the applicants and user table
     formatString := "SELECT a.user_email, a.apply_time, u.first_name, u.last_name, u.phone " +
-       "FROM job_applications a, user u where a.user_email=u.user_email AND " +
+       "FROM job_application a, user u where a.user_email=u.user_email AND " +
        "a.job_id=%d order by a.apply_time" 
     sqlcmd = fmt.Sprintf(formatString,idval)
     rows,err := db.Query(sqlcmd)
