@@ -40,6 +40,9 @@ func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 	if taskIndex < 0 {
 		return false, "Invalid task specified"
 	}
+	// set all email addresses to lower case
+	user.Email = strings.ToLower(user.Email)
+	job.Creator = strings.ToLower(job.Creator)
 	switch taskIndex {
 		case 0:
 			bOk, msg = validateUserInfo(user)
@@ -62,7 +65,7 @@ func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 			break
 		case 4: 
 			// jobs offered search
-			job.Creator = user.Email
+			// will use job.Creator
 			bOk, msg = validateOfferedAppliedRequest(job)
 			break
 		case 5: 
@@ -79,8 +82,8 @@ func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 			bOk, msg = validateJobSubmission(submission) 
 			break
 		case 8: // candidates
-			job.Creator = user.Email
 			// same arguments as detail request
+			// will use job.Creator
 			bOk, msg = validateDetailRequest(job)
 			break											 				 			
 	} 
@@ -129,20 +132,26 @@ func validateJobInfo(job *data.Job_info, is_create bool) (bOk bool, msg string) 
 			bOk = true
 			msg = ""
 		}
-	}	
+	}
 	if bOk && is_create {
 		bOk, msg = validateNonEmpty(job.Title,"title")
-	}			
+	}
+	if bOk {
+		bOk, msg = validateLength(job.Title,64,"title")
+	}		
 	if bOk && is_create {
 		bOk, msg = validateNonEmpty(job.Description, "description")
-	}	
-	if bOk && (is_create || job.Min_education > 0) {
+	}
+	if bOk {
+		bOk, msg = validateLength(job.Description,1024,"description")
+	}			
+	if bOk && (is_create || job.Min_education != 0) {
 		bOk, msg = validateEducation(job.Min_education)
 	}
-	if bOk && (is_create || job.Min_experience > 0) {
+	if bOk && (is_create || job.Min_experience != 0) {
 		bOk, msg = validateExperience(job.Min_experience)
 	}
-	if bOk && (is_create || job.Salary > 0) {
+	if bOk && (is_create || job.Salary != 0) {
 		bOk, msg = validateSalary(job.Salary)
 	}		
 	return bOk, msg
@@ -243,9 +252,6 @@ func validateOfferedAppliedRequest(job *data.Job_info) (bOk bool, msg string) {
 	return bOk, msg
 }
 
-
-
-
 // check to see if the passed date assumed to be in form YYYY-MM-DD is valid
 func validateDate(datestring string) (bOk bool, msg string) {
 	_, err := time.Parse(dateOnlyString,datestring)
@@ -262,8 +268,18 @@ func validateDate(datestring string) (bOk bool, msg string) {
 // Check simply to see if the string passed is not empty
 // Use the label to construct an error message if it is
 func validateNonEmpty(parameter string, label string) (bOk bool, msg string) {
-	if parameter == "" {
+	trimmed := strings.TrimSpace(parameter)
+	if trimmed == "" || strings.HasPrefix(trimmed,"-") {
 		return false, label + " must not be blank"
+	}
+	return true,""
+}
+// Be sure that a parameter is not too long
+// Use label to construct an error message if it is
+func validateLength(parameter string, maxlen int, label string) (bOk bool, msg string) {
+	if len(parameter) > maxlen {
+		msg = fmt.Sprintf("%s must be %d characters or less", label, maxlen)
+		return false, msg
 	}
 	return true,""
 }
@@ -271,8 +287,13 @@ func validateNonEmpty(parameter string, label string) (bOk bool, msg string) {
 // Do a simple validation of the email 
 // This is not guaranteed to match every valid email but works in most cases
 func validateEmail(email_addr string) (bOk bool, msg string) {
-	if email_addr == "" {
+	trimmed := strings.TrimSpace(email_addr)
+	if trimmed == "" {
 		return false, "Missing user email"
+	}
+	bOk, msg = validateLength(email_addr, 32, "Email")
+	if !bOk {
+		return bOk, msg
 	}
 	var regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
 	bOk, err := regexp.MatchString(regex, email_addr)
@@ -293,6 +314,10 @@ func validateFirstLastName(name string, which string) (bOk bool, msg string) {
 	if name == "" {
 		return false, "Missing user " + which + " name"
 	}	
+	bOk, msg = validateLength(name, 32, which + " name")
+	if !bOk {
+		return bOk, msg
+	}
 	var regex = "^[a-zA-Z]+$"
 	bOk, err := regexp.MatchString(regex, name)
 	if !bOk {
