@@ -189,7 +189,7 @@ func customUsageTask(task_name string) {
             fmt.Println("\t-creator <email of job creator>")
             fmt.Println("\t-job_id <show candidates for what job>\n")
             fmt.Println("All arguments are required\n")    
-            fmt.Println("Example: ./job_wizard -task candidates -email sally@gmail.com -job_id 00003\n")
+            fmt.Println("Example: ./job_wizard -task candidates -creator sally@gmail.com -job_id 00003\n")
             break                       
         default:
             fmt.Println("Invalid task specified\n")                     
