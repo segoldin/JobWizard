@@ -1,4 +1,4 @@
-package main
+package helper
 // JobWizard demo application
 // validation functions for command line arguments
 // Created by Sally Goldin 2025-06-23
@@ -20,7 +20,7 @@ const (
 )
 
 // Find the specified task in the task list. Return its index (0...) or -1 if not found
-func findTask(task string) (index int) {
+func FindTask(task string) (index int) {
 	index = -1
 	for i,t := range tasklist {
 		if strings.EqualFold(task,t) {
@@ -34,7 +34,7 @@ func findTask(task string) (index int) {
 // Pass all structs used for arguments 
 // Note that some fields are used by multiple tasks
 // We pass pointers so that any changes or copying gets preserved in the caller
-func validateTaskArgs(task string, user *data.User_info, job *data.Job_info, filter *data.Search_criteria, submission *data.Submission) (bOk bool, msg string) {
+func ValidateTaskArgs(task string, user *data.User_info, job *data.Job_info, filter *data.Search_criteria, submission *data.Submission) (bOk bool, msg string) {
 	bOk = true
 	taskIndex := findTask(task)
 	if taskIndex < 0 {
