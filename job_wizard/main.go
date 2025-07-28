@@ -11,7 +11,8 @@ import (
     "path/filepath" 
     "github.com/segoldin/JobWizard/job_wizard/data"    
     "github.com/segoldin/JobWizard/job_wizard/dbaccess"
-    //"github.com/segoldin/JobWizard/job_wizard/api"
+    "github.com/segoldin/JobWizard/job_wizard/helper"    
+    "github.com/segoldin/JobWizard/job_wizard/api"
     "github.com/segoldin/JobWizard/job_wizard/api/middlewares"        
     "github.com/joho/godotenv"
     "github.com/labstack/echo/v4"
@@ -91,6 +92,7 @@ func customUsage() {
     fmt.Println("\tsubmit\t\tSubmit an application for a job")
     fmt.Println("\tcandidates\tGet applicants for a specific job\n")    
     fmt.Println("For task-specific arguments, type ./job_wizard -help=true -task <task_name>\n")
+    fmt.Println("To run as a backend service, type ./job_wizard -server=true")
     os.Exit(0)                      
 }
 
@@ -99,7 +101,7 @@ func customUsage() {
 func customUsageTask(task_name string) {
     fmt.Println("\nGeneral usage: ./job_wizard -task <taskname> [arguments...]")
     fmt.Println("\tWrites results to standard output in JSON format\n")
-    task_index := findTask(task_name)
+    task_index := helper.FindTask(task_name)
     if (task_index < 0) {
         fmt.Printf("Unknown task '%s'\n",task_name)
         os.Exit(0)
@@ -212,12 +214,10 @@ func setupAPI() {
 
     e.Use(middleware.CORS())
     middlewares.InitCorsMiddleware(e)
-/***
     _privateAPI := e.Group("/api")
     _ = _privateAPI
     api.ApplicationPrivateRoute(_privateAPI)
     e.Logger.Fatal(e.Start(":" + os.Getenv("JOBWIZARD_API_PORT")))
-    **/
 }
 
 func commandLineFunction() {
@@ -227,20 +227,20 @@ func commandLineFunction() {
         fmt.Println("Connection to DB failed")
         os.Exit(1)
     }
-    valid, msg := validateTaskArgs(task,&user,&job,&filter,&submission)
+    valid, msg := helper.ValidateTaskArgs(task,&user,&job,&filter,&submission)
     if !valid {
         jsonErrorOutput(msg)
         os.Exit(1)
     }
 
-    task_index := findTask(task)  // we have already validated the task above
+    task_index := helper.FindTask(task)  // we have already validated the task above
     jsonResponse := dispatch(task_index)
     fmt.Println(jsonResponse)
 }
-
 // Figure out what db service/function to call to handle the task
 // We assume that dispatch() knows which structure holds the appropriate arguments
 // for the relevant task
+// This is used only in the command line version
 func dispatch(task_index int) (jsonResponse string) {
     var err error
     switch(task_index) {
