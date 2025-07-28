@@ -134,13 +134,13 @@ func ValidateJobInfo(job *data.Job_info, is_create bool) (bOk bool, msg string) 
 		}
 	}
 	if bOk && is_create {
-		bOk, msg = validateNonEmpty(job.Title,"title")
+		bOk, msg = ValidateNonEmpty(job.Title,"title")
 	}
 	if bOk {
 		bOk, msg = validateLength(job.Title,64,"title")
 	}		
 	if bOk && is_create {
-		bOk, msg = validateNonEmpty(job.Description, "description")
+		bOk, msg = ValidateNonEmpty(job.Description, "description")
 	}
 	if bOk {
 		bOk, msg = validateLength(job.Description,1024,"description")
@@ -198,9 +198,12 @@ func ValidateDetailRequest(job *data.Job_info) (bOk bool, msg string) {
 			bOk = false
 			msg = "Unknown user email"
 		}
-	}	
+	}
+	idstring := job.Job_id	
 	if bOk {
-		idstring := job.Job_id
+		bOk, msg = ValidateNonEmpty(idstring," Job ID")
+	}
+	if bOk {
 		idval, err := strconv.Atoi(idstring)
 		if (err != nil) || (idval <= 0) {
 			bOk = false 
@@ -267,7 +270,7 @@ func validateDate(datestring string) (bOk bool, msg string) {
 
 // Check simply to see if the string passed is not empty
 // Use the label to construct an error message if it is
-func validateNonEmpty(parameter string, label string) (bOk bool, msg string) {
+func ValidateNonEmpty(parameter string, label string) (bOk bool, msg string) {
 	trimmed := strings.TrimSpace(parameter)
 	if trimmed == "" || strings.HasPrefix(trimmed,"-") {
 		return false, label + " must not be blank"

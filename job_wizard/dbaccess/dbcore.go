@@ -146,7 +146,10 @@ func CreateJob(creator_email string, title string, desc string, education int, e
         tx.Rollback()
         return "", err
     }
-    tx.Commit()
+    err = tx.Commit()  
+    if err != nil {
+        return "", err
+    }
     job_id = fmt.Sprintf("%05d",id)
     return job_id, nil
 }
@@ -410,11 +413,12 @@ func SubmitJobApplication(user_email string, job_id string) (applied_job_id stri
         return "", err
     }    
     // now get the job information
-    sqlcmd = fmt.Sprintf("SELECT min_education, is_open FROM job WHERE id=%d",idval)
+    sqlcmd = fmt.Sprintf("SELECT created_by, min_education, is_open FROM job WHERE id=%d",idval)
     row = tx.QueryRow(sqlcmd)
+    var creator string
     var min_education int
     var open_flag bool
-    err = row.Scan(&min_education, &open_flag)
+    err = row.Scan(&creator, &min_education, &open_flag)
     if err != nil {
         tx.Rollback()
         return "", fmt.Errorf("No matching job found")
@@ -422,6 +426,9 @@ func SubmitJobApplication(user_email string, job_id string) (applied_job_id stri
     if open_flag == false {
         tx.Rollback()
         return "", fmt.Errorf("Job has already been filled")        
+    }
+    if user_email == creator {
+        return "", fmt.Errorf("Creator cannot submit an application for their own job")
     }
     now := time.Now()
     nowstring := now.Format(timeFormatString)     
