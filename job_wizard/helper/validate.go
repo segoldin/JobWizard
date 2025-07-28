@@ -36,7 +36,7 @@ func FindTask(task string) (index int) {
 // We pass pointers so that any changes or copying gets preserved in the caller
 func ValidateTaskArgs(task string, user *data.User_info, job *data.Job_info, filter *data.Search_criteria, submission *data.Submission) (bOk bool, msg string) {
 	bOk = true
-	taskIndex := findTask(task)
+	taskIndex := FindTask(task)
 	if taskIndex < 0 {
 		return false, "Invalid task specified"
 	}
@@ -45,10 +45,10 @@ func ValidateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 	job.Creator = strings.ToLower(job.Creator)
 	switch taskIndex {
 		case 0:
-			bOk, msg = validateUserInfo(user)
+			bOk, msg = ValidateUserInfo(user)
 			break
 		case 1:
-			bOk, msg = validateJobInfo(job, true) 
+			bOk, msg = ValidateJobInfo(job, true) 
 			break
 		case 2:
 			// can only define a command line arg once, so we copy from other structs
@@ -56,35 +56,35 @@ func ValidateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 			filter.Experience = job.Min_experience
 			filter.Education = job.Min_education
 			filter.Salary = job.Salary
-			bOk, msg = validateSearchCriteria(filter)
+			bOk, msg = ValidateSearchCriteria(filter)
 			break
 		case 3: 
 			// detail
 			job.Creator = user.Email
-			bOk, msg = validateDetailRequest(job)
+			bOk, msg = ValidateDetailRequest(job)
 			break
 		case 4: 
 			// jobs offered search
 			// will use job.Creator
-			bOk, msg = validateOfferedAppliedRequest(job)
+			bOk, msg = ValidateOfferedAppliedRequest(job)
 			break
 		case 5: 
 			// jobs applied search
 			job.Creator = user.Email
-			bOk, msg = validateOfferedAppliedRequest(job)
+			bOk, msg = ValidateOfferedAppliedRequest(job)
 			break 
 		case 6:
-			bOk, msg = validateJobInfo(job, false) 
+			bOk, msg = ValidateJobInfo(job, false) 
 			break
 		case 7: // submit a job application
 			submission.Email = user.Email
 			submission.Job_id = job.Job_id
-			bOk, msg = validateJobSubmission(submission) 
+			bOk, msg = ValidateJobSubmission(submission) 
 			break
 		case 8: // candidates
 			// same arguments as detail request
 			// will use job.Creator
-			bOk, msg = validateDetailRequest(job)
+			bOk, msg = ValidateDetailRequest(job)
 			break											 				 			
 	} 
 	return bOk,msg 
@@ -92,7 +92,7 @@ func ValidateTaskArgs(task string, user *data.User_info, job *data.Job_info, fil
 
 // Check that all information needed to create a user is specified,
 // and that the individual field values have valid format
-func validateUserInfo(user *data.User_info) (bOk bool, msg string) {
+func ValidateUserInfo(user *data.User_info) (bOk bool, msg string) {
 	bOk, msg = validateEmail(user.Email)
 	if bOk {
 		bOk, msg = validateFirstLastName(user.First, "first")
@@ -113,7 +113,7 @@ func validateUserInfo(user *data.User_info) (bOk bool, msg string) {
 // and that the individual field values have valid format
 // If "is_create" then we are creating a new job and all fields are required
 // Otherwise, the user can specify only the values that are to be changed
-func validateJobInfo(job *data.Job_info, is_create bool) (bOk bool, msg string) {
+func ValidateJobInfo(job *data.Job_info, is_create bool) (bOk bool, msg string) {
 	bOk, msg = validateEmail(job.Creator)
 	if bOk {
 		bRegistered, _ := dbaccess.IsRegisteredUser(job.Creator)
@@ -160,7 +160,7 @@ func validateJobInfo(job *data.Job_info, is_create bool) (bOk bool, msg string) 
 // Check the specified search criteria
 // All are optional except for the user, but numeric values have limits
 // If nothing is specified, the search will return all jobs
-func validateSearchCriteria(filter *data.Search_criteria) (bOk bool, msg string) {
+func ValidateSearchCriteria(filter *data.Search_criteria) (bOk bool, msg string) {
 	bOk, msg = validateEmail(filter.User_email)
 	if bOk {
 		bRegistered, _ := dbaccess.IsRegisteredUser(filter.User_email)
@@ -190,7 +190,7 @@ func validateSearchCriteria(filter *data.Search_criteria) (bOk bool, msg string)
 }
 
 // check to see that the ID is set and is a positive integer
-func validateDetailRequest(job *data.Job_info) (bOk bool, msg string) {	
+func ValidateDetailRequest(job *data.Job_info) (bOk bool, msg string) {	
 	bOk, msg = validateEmail(job.Creator) // not really the creator... just use this field
 	if bOk {
 		bRegistered, _ := dbaccess.IsRegisteredUser(job.Creator)
@@ -214,7 +214,7 @@ func validateDetailRequest(job *data.Job_info) (bOk bool, msg string) {
 }
 
 // check to see that the ID is set and is a positive integer
-func validateJobSubmission(submission *data.Submission) (bOk bool, msg string) {	
+func ValidateJobSubmission(submission *data.Submission) (bOk bool, msg string) {	
 	bOk, msg = validateEmail(submission.Email) 
 	if bOk {
 		bRegistered, _ := dbaccess.IsRegisteredUser(submission.Email)
@@ -240,7 +240,7 @@ func validateJobSubmission(submission *data.Submission) (bOk bool, msg string) {
 // Specialized searches
 // The only required argument is the email, which is interpreted differently
 // depending on the task
-func validateOfferedAppliedRequest(job *data.Job_info) (bOk bool, msg string) {	
+func ValidateOfferedAppliedRequest(job *data.Job_info) (bOk bool, msg string) {	
 	bOk, msg = validateEmail(job.Creator) // not really the creator... just use this field
 	if bOk {
 		bRegistered, _ := dbaccess.IsRegisteredUser(job.Creator)
