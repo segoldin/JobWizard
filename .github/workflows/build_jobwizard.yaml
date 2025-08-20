@@ -2,21 +2,14 @@ name: Build job_wizard and package into a Docker container
 
 on:
   workflow_dispatch:
-#    inputs:
-#      environment:
-#        description: 'Which environment do you want to deploy to?'
-#        required: true
-#        type: choice
-#        options:
-#        - staging
-#        - production
-#      component:
-#        description: 'Which component do you want to deploy?'
-#        required: true
-#        type: choice
-#        options:
-#        - frontend
-#        - backend
+   inputs:
+     environment:
+        description: 'Which environment do you want to deploy to?'
+        required: true
+        type: choice
+        options:
+        - staging
+        - production
 
 jobs:
   build-and-push:
