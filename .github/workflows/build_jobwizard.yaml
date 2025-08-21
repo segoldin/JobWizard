@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-       - name: Checkout target repository code
+      - name: Checkout target repository code
         uses: actions/checkout@v4
         with:
           repository: segoldin/JobWizard
@@ -50,7 +50,7 @@ jobs:
           push: true
           build-args: |
             ENV=${{ steps.setup.outputs.ENV }}
-          tags: | 
+          tags: |
             ${{ steps.vars.outputs.IMAGE_NAME_LATEST }}
             ${{ steps.vars.outputs.IMAGE_NAME_SHA }}
 
