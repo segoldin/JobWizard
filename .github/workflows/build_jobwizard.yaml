@@ -20,11 +20,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Use secret
+        env:
+          MY_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+          run: echo "My Git PAT is $MY_TOKEN"
+
       - name: Checkout target repository code
         uses: actions/checkout@v4
         with:
           repository: segoldin/JobWizard
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: $MY_TOKEN
           ref: main
           path: JobWizard
 
