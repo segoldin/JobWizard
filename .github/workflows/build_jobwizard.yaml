@@ -19,14 +19,12 @@ jobs:
       - name: Use secret
         env:
           MY_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
-          MY_USER: segoldin
         run: echo "My Git PAT is $MY_TOKEN"
 
       - name: Checkout target repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           repository: segoldin/JobWizard
-          username: $MY_USER
           token: $MY_TOKEN
           ref: main
           path: JobWizard
