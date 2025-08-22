@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
    inputs:
       architecture:
-        description: 'Which architecture (AMD or ARM64)?'
+        description: 'Which architecture?'
         required: true
         type: choice
         options:
-        - AMD-X86 (AMD or Intel)
-        - ARM64 (Apple)
+        - AMD64
+        - ARM64
 jobs:
   build-and-push:
     name: Build and push job_wizard container to GHCR
@@ -20,8 +20,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: segoldin/JobWizard
-          environment: production
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          echo "Token is ${{ secrets.REPO_ACCESS_TOKEN }}"
           ref: main
           path: JobWizard
 
