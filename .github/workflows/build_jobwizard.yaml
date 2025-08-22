@@ -3,10 +3,6 @@ name: Build job_wizard and package into a Docker container
 on:
   workflow_dispatch:
    inputs:
-      environment:
-        description: 'Environment to run tests against'
-        type: environment
-        required: true
       architecture:
         description: 'Which architecture?'
         required: true
@@ -23,12 +19,14 @@ jobs:
       - name: Use secret
         env:
           MY_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+          MY_USER: segoldin
         run: echo "My Git PAT is $MY_TOKEN"
 
       - name: Checkout target repository code
         uses: actions/checkout@v4
         with:
           repository: segoldin/JobWizard
+          username: $MY_USER
           token: $MY_TOKEN
           ref: main
           path: JobWizard
