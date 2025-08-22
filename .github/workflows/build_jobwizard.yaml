@@ -3,14 +3,13 @@ name: Build job_wizard and package into a Docker container
 on:
   workflow_dispatch:
    inputs:
-     environment:
-        description: 'Which environment do you want to deploy to?'
+      architecture:
+        description: 'Which architecture (AMD or ARM64)?'
         required: true
         type: choice
         options:
-        - staging
-        - production
-
+        - AMD-X86 (AMD or Intel)
+        - ARM64 (Apple)
 jobs:
   build-and-push:
     name: Build and push job_wizard container to GHCR
@@ -21,6 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: segoldin/JobWizard
+          environment: production
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           ref: main
           path: JobWizard
@@ -30,7 +30,7 @@ jobs:
         run: |
           cd ${{ steps.setup.outputs.REPOSITORY }}
           COMMIT_SHA=${{ github.run_id }}-${{ github.run_number }}
-          BASE_APPLICATION_NAME="omega_hub_backend"
+          BASE_APPLICATION_NAME="job_wizard"
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_NAME="ghcr.io/${REPOSITORY_OWNER}/JobWizard/${{ github.event.inputs.environment }}/${BASE_APPLICATION_NAME}"
           echo "Will tag image as: $IMAGE_NAME:$COMMIT_SHA and $IMAGE_NAME:latest"
