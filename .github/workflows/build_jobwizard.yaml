@@ -25,7 +25,7 @@ jobs:
           path: JobWizard
 
       - name: Set up variables
-        id: vars
+        id: setup
         run: |
           cd ${{ steps.setup.outputs.REPOSITORY }}
           COMMIT_SHA=${{ github.run_id }}-${{ github.run_number }}
