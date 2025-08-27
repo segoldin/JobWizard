@@ -37,7 +37,7 @@ jobs:
           echo "APPLICATION_SUBDIR=$APPLICATION_SUBDIR" >> $GITHUB_OUTPUT
           echo "IMAGE_NAME_LATEST=${IMAGE_NAME}:latest" >> $GITHUB_OUTPUT
           echo "IMAGE_NAME_SHA=${IMAGE_NAME}:${COMMIT_SHA}" >> $GITHUB_OUTPUT
-          echo "EMV=production" >> $GITHUB_OUTPUT          
+          echo "ENV=production" >> $GITHUB_OUTPUT          
           echo "Will tag image as: $IMAGE_NAME:$COMMIT_SHA and $IMAGE_NAME:latest"          
 
       - name: Log in to GitHub Container Registry
@@ -56,6 +56,6 @@ jobs:
           build-args: |
             ENV=${{ steps.setup.outputs.ENV }}
           tags: | 
-            ${{ steps.vars.outputs.IMAGE_NAME_LATEST }}
-            ${{ steps.vars.outputs.IMAGE_NAME_SHA }}
+            ${{ steps.setup.outputs.IMAGE_NAME_LATEST }}
+            ${{ steps.setup.outputs.IMAGE_NAME_SHA }}
  
