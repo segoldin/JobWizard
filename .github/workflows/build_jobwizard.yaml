@@ -53,7 +53,7 @@ jobs:
           push: true
           build-args: |
             ENV=${{ steps.setup.outputs.ENV }}
-            tags: | 
-              ${{ steps.vars.outputs.IMAGE_NAME_LATEST }}
-              ${{ steps.vars.outputs.IMAGE_NAME_SHA }}
+          tags: | 
+            ${{ steps.vars.outputs.IMAGE_NAME_LATEST }}
+            ${{ steps.vars.outputs.IMAGE_NAME_SHA }}
  
