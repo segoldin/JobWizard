@@ -9,9 +9,9 @@ WORKDIR /go/src
 
 # Download Go modules
 COPY go.mod go.sum ./
-#RUN go mod download
+RUN go mod download
 #RUN go mod vendor
-RUN go mod tidy
+#RUN go mod tidy
 
 COPY . /go/src/
 
