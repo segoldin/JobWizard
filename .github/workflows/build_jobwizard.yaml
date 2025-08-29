@@ -31,8 +31,8 @@ jobs:
           COMMIT_SHA=${{ github.run_id }}-${{ github.run_number }}
           BASE_APPLICATION_NAME="job_wizard"
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE_NAME="ghcr.io/${REPOSITORY_OWNER}/jobwizard/${BASE_APPLICATION_NAME}"
-          echo "REPOSITORY=JobWizard" >> $GITHUB_OUTPUT          
+          IMAGE_NAME="docker.io/segoldin/jobwizard/${BASE_APPLICATION_NAME}"
+          echo "REPOSITORY=cmkl_repo" >> $GITHUB_OUTPUT          
           echo "BASE_APPLICATION_NAME=$BASE_APPLICATION_NAME" >> $GITHUB_OUTPUT
           echo "APPLICATION_SUBDIR=$APPLICATION_SUBDIR" >> $GITHUB_OUTPUT
           echo "IMAGE_NAME_LATEST=${IMAGE_NAME}:latest" >> $GITHUB_OUTPUT
@@ -40,12 +40,12 @@ jobs:
           echo "ENV=production" >> $GITHUB_OUTPUT          
           echo "Will tag image as: $IMAGE_NAME:$COMMIT_SHA and $IMAGE_NAME:latest"          
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to DockerHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.io
+          username: segoldin68
+          password: ${{ secrets.DOCKER_PWD }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
