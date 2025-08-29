@@ -36,6 +36,7 @@ jobs:
           echo "DOCKER_REPO=segoldin68/cmkl_repo" >> $GITHUB_OUTPUT                    
           echo "BASE_APPLICATION_NAME=$BASE_APPLICATION_NAME" >> $GITHUB_OUTPUT
           echo "APPLICATION_SUBDIR=$APPLICATION_SUBDIR" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_NAME_LATEST=${IMAGE_NAME}:latest" >> $GITHUB_OUTPUT
           echo "IMAGE_NAME_SHA=${IMAGE_NAME}:${COMMIT_SHA}" >> $GITHUB_OUTPUT
           echo "ENV=production" >> $GITHUB_OUTPUT          
@@ -51,7 +52,7 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: docker.io/${{ steps.setup.outputs.DOCKER_REPO }}
+          context: ${{ steps.setup.outputs.IMAGE_NAME }}
           file: ${{ steps.setup.outputs.REPOSITORY }}/docker/Dockerfile
           push: true
           build-args: |
