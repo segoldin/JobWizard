@@ -52,7 +52,6 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ steps.setup.outputs.IMAGE_NAME }}
           file: ${{ steps.setup.outputs.REPOSITORY }}/docker/Dockerfile
           push: true
           build-args: |
