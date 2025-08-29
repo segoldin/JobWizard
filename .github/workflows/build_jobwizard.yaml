@@ -12,7 +12,7 @@ on:
         - ARM64
 jobs:
   build-and-push:
-    name: Build and push job_wizard container to GHCR
+    name: Build and push job_wizard container to DockerHub
     runs-on: ubuntu-latest
 
     steps:
@@ -51,8 +51,7 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          registry: docker.io
-          context: ${{ steps.setup.outputs.REPOSITORY }}
+          context: docker.io/${{ steps.setup.outputs.DOCKER_REPO }}
           file: ${{ steps.setup.outputs.REPOSITORY }}/docker/Dockerfile
           push: true
           build-args: |
