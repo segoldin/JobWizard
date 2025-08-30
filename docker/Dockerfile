@@ -5,15 +5,13 @@ FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache git
 ENV GOPATH=/go
 
-RUN pwd
-RUN ls -al
 WORKDIR /go/src
 
 # Download Go modules
 RUN mkdir JobWizard
 COPY go.mod go.sum JobWizard
 RUN mkdir JobWizard/job_wizard
-COPY job_wizard ./JobWizard/job_wizard
+COPY JobWizard/job_wizard ./JobWizard/job_wizard
 WORKDIR /go/src/JobWizard
 RUN go mod download
 
