@@ -5,14 +5,14 @@ FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache git
 ENV GOPATH=/go
 
+RUN pwd
+RUN ls -al
 WORKDIR /go/src
 
 # Download Go modules
 COPY go.mod go.sum ./
 RUN pwd
 RUN ls -al
-RUN ls -al ../
-RUN ls -al /
 RUN go mod download
 #RUN go mod vendor
 #RUN go mod tidy
