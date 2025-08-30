@@ -11,20 +11,15 @@ WORKDIR /go/src
 
 # Download Go modules
 COPY go.mod go.sum ./
+RUN mkdir job_wizard
+COPY job_wizard ./job_wizard
 RUN pwd
 RUN ls -al
-RUN ls -al ./src
 RUN go mod download
 #RUN go mod vendor
 #RUN go mod tidy
 
-COPY . /go/src/
-
-WORKDIR /go/src/
-
-
-#RUN go get -d -v ./...
-#RUN go install -v ./...
+WORKDIR /go/src/job_wizard
 
 LABEL author="SallyGoldin"
 
