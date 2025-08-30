@@ -13,6 +13,7 @@ WORKDIR /go/src
 COPY go.mod go.sum ./
 RUN pwd
 RUN ls -al
+RUN ls -al ./src
 RUN go mod download
 #RUN go mod vendor
 #RUN go mod tidy
