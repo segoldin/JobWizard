@@ -12,7 +12,7 @@ RUN mkdir JobWizard
 COPY go.mod go.sum JobWizard
 WORKDIR /go/src/JobWizard
 RUN mkdir job_wizard
-COPY JobWizard/job_wizard/* ./job_wizard
+COPY ./JobWizard/job_wizard/* ./job_wizard
 RUN go mod download
 
 WORKDIR /go/src/JobWizard/job_wizard
