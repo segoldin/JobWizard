@@ -1,21 +1,20 @@
 # Dockerfile to build the job_wizard CLI executable
-# Sally Goldin, 2025-08-20
+# Sally Goldin, created 2025-08-20
+# This version is intended to be run on the local machine
+# not from a GH workflow
+# Resulting container image needs to be pushed manually to container registry
+
 # build stage
 FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache git
 ENV GOPATH=/go
 
-WORKDIR /go/src
+WORKDIR /app
 
-# Download Go modules
-RUN mkdir JobWizard
-COPY go.mod go.sum JobWizard
-WORKDIR /go/src/JobWizard
-RUN mkdir job_wizard
-COPY ./JobWizard/job_wizard/* ./job_wizard
-RUN go mod download
+# easy way to get the source files
+RUN git clone https://github.com/segoldin/JobWizard.git
 
-WORKDIR /go/src/JobWizard/job_wizard
+WORKDIR /app/JobWizard/job_wizard
 
 LABEL author="SallyGoldin"
 
@@ -35,25 +34,25 @@ RUN groupadd -g 1000 appgroup && \
 # Set the working directory
 WORKDIR /app
 
-# Valid options for ENV:
-# - prod (default)
-# - dev
-# - staging
-ARG ENV=prod
+# Install necessary packages
+RUN apt-get update && apt-get install -y ca-certificates tzdata sqlite3 && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /go/src/job_wizard .
-COPY --from=builder /go/src/.env .
+# Set the working directory
+WORKDIR /app
+
+# Copy the built binary
+COPY --from=builder /app/JobWizard/job_wizard/job_wizard .
+
+# Copy the .env file
+COPY --from=builder /app/JobWizard/job_wizard/.env_jobwizard .
+
+# Copy the database
+RUN mkdir database
+WORKDIR /app/database
+COPY --from=builder /app/JobWizard/job_wizard/database/jobwizard_db
 
 # Change ownership of the app directory to the non-root user
 RUN chown -R appuser:appgroup /app
-
-# Create directories that the application might need to write to
-RUN mkdir -p /app/logs /tmp && \
-    chown -R appuser:appgroup /app/logs
-
-# Create a directory to store the templates
-RUN mkdir -p /app/templates && \
-    chown -R appuser:appgroup /app/templates
 
 # Switch to the non-root user
 USER 1000:1000
