@@ -1,8 +1,6 @@
-# Dockerfile to build the job_wizard CLI executable
+# Dockerfile to build the job_wizard CLI executable image
 # Sally Goldin, created 2025-08-20
-# This version is intended to be run on the local machine
-# not from a GH workflow
-# Resulting container image needs to be pushed manually to container registry
+# This version clones the entire repo because we were having problems with checkout
 
 # build stage
 FROM golang:1.22-alpine AS builder
