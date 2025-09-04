@@ -55,7 +55,4 @@ RUN chown -R appuser:appgroup /app
 # Switch to the non-root user
 USER 1000:1000
 
-# Set the environment variable for the application
-ENV ENV=${ENV}
-
 CMD [ "./job_wizard" ]
