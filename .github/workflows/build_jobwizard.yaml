@@ -33,7 +33,7 @@ jobs:
         with:
           registry: docker.io
           username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PWD }}
+          password: ${{ secrets.DOCKER_PAT }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
