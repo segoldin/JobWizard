@@ -34,6 +34,7 @@ jobs:
           registry: docker.io
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PAT }}
+          logout: false
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
@@ -41,7 +42,6 @@ jobs:
           file: docker/Dockerfile
           push: true
           build-args: |
-            ENV=${{ steps.setup.outputs.ENV }}
             DEBUG=true
           tags: | 
             ${{ steps.setup.outputs.IMAGE_NAME_LATEST }}
