@@ -47,7 +47,7 @@ COPY --from=builder /app/JobWizard/job_wizard/.env_jobwizard .
 # Copy the database
 RUN mkdir database
 WORKDIR /app/database
-COPY --from=builder /app/JobWizard/job_wizard/database/jobwizard_db
+COPY --from=builder /app/JobWizard/job_wizard/database/jobwizard_db .
 
 # Change ownership of the app directory to the non-root user
 RUN chown -R appuser:appgroup /app
