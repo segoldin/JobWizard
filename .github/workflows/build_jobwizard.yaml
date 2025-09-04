@@ -20,7 +20,7 @@ jobs:
         id: setup
         run: |
           BASE_APPLICATION_NAME="job_wizard"
-          IMAGE_NAME="docker.io/segoldin68/cmkl_repo/${BASE_APPLICATION_NAME}"
+          IMAGE_NAME="segoldin68/cmkl_repo/${BASE_APPLICATION_NAME}"
           echo "DOCKER_REPO=${{ secrets.DOCKER_USER }}/cmkl_repo" >> $GITHUB_OUTPUT                    
           echo "BASE_APPLICATION_NAME=$BASE_APPLICATION_NAME" >> $GITHUB_OUTPUT
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
