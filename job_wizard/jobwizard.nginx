@@ -1,0 +1,40 @@
+## NGINX configuration file for JobWizard web application
+# Created by Sally Goldin, 2025-09-03 derived from EvalRunnerServer
+# Proxies http port 8889 to https (443) 
+# Note that UI source code should specify the API base url (https) as a variable
+# in the code or in the environment
+
+server {
+        listen 80;
+        listen 443 ssl;
+
+        ssl_certificate /etc/letsencrypt/live/teaching.cmkl.ai/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/teaching.cmkl.ai/privkey.pem;
+
+        server_name teaching.cmkl.ai;
+
+	index login.html;
+
+	include mime.types;
+
+	# serve static files
+	location ~* \.(js|jpg|svg|png)$ {
+             root /var/www/html;
+    	}
+
+
+	location / {
+	     root /var/www/html;
+        }
+
+
+	location /api {
+                proxy_pass http://localhost:8889;
+        	proxy_set_header Host $host;
+        	proxy_set_header X-Real-IP $remote_addr;
+        	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        	proxy_set_header X-Forwarded-Proto $scheme;
+		
+        }
+}
+
