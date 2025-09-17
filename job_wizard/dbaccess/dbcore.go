@@ -7,6 +7,7 @@ import (
     "database/sql"
     "fmt"
     "os"
+    "sort"
     "strconv"
     "strings"
     "time"
@@ -262,6 +263,10 @@ func doSearchOperation(sqlcmd string) (summaries []data.Job_summary, err error) 
         job.Date_posted = posted[0:10] 
         summaries = append(summaries,job)
     }
+    // sort by job_id
+    sort.SliceStable(summaries, func(i, j int) bool {
+        return summaries[i].Job_id < summaries[j].Job_id
+    })
     return summaries, nil
 }
 
