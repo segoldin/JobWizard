@@ -1,0 +1,12 @@
+To import CSV files into SQLITE:
+
+sqlite3 [dbname]
+.mode csv
+.import [file] [table]
+
+NOTE that even though the ID columns in the job_wizard DB are flagged as
+"autoincrement", SQLITE does not really support this. So we have to provide ID
+values explicitly in the CSV files.
+
+Above assumes no column headers in the file. I believe there is a way to tell
+it to skip column headers.
